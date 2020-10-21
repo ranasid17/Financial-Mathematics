@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt 
+import seaborn as sns
+
 # Goal: Create and visualize PDF of twoDayChanges.py 
 #   1) Must run twoDayChanges.py prior to this to create vars
 
