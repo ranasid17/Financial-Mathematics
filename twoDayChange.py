@@ -12,6 +12,11 @@ import numpy as np
 # import csv file (include r prior to path to adjust for '/')
 spyRaw_Data = pd.read_csv (r'/Users/Sid/Documents/Other/SPY.csv') 
 
+# Goal: 
+    # 1) From imported csv, extract necessary columns 
+    # 2) Retrieve all mkt open prices for all Mondays (Oct 2019-2020) 
+    # 3) "          " mkt close prices for all Wednesdays (48h later) 
+    # 4) Calculate relative change in price (for the 48h period) 
 class twoDayChange: 
     # constructor function 
     def __init__ (self, rawData):
