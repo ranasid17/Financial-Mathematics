@@ -10,10 +10,21 @@ import pandas as pd
 import numpy as np 
 
 # import csv file (include r prior to path to adjust for '/')
+# adjust this path to wherever file is stored on your computer 
+# SPY (ETF) used here as example 
 spyRaw_Data = pd.read_csv (r'/Users/Sid/Documents/Other/SPY.csv') 
 
+# Goals: 
+    # 1) Determine relative price change of an input over 48h period (M-W)
+    # 2) Better inform short term options investment by calculating 
+    #       historic relative price changes for 1 year period 
+# Inputs: 
+    # 1) Functions that take in "rawData" should be feed csv file containing 
+    #       trading dates, market open and close prices, and trade volume
+    # 2) Methods were created with Yahoo Finance csv structure so likely YF
+    #       will be easiest option for application 
 class twoDayChange: 
-    # constructor function 
+    # constructor  
     def __init__ (self, rawData):
         self.input = rawData # should be raw YahooFinance csv 
     # Goals: 
@@ -43,8 +54,7 @@ class twoDayChange:
         # 1) Return market open values for each Monday (Oct 2019 - Oct 2020)
         # 2) Return market close values for each Wednesday in same time frame 
     # Inputs: 
-        # 1) arrOpen: array containing mkt open prices
-        # 2) arrClose: array containign mkt close prices (48h later)
+        # 1) rawData: unmodified csv file (YahooFinance format)
     # Outputs: 
         # 1) mondayOpen: array containing mkt open prices for given timeframe 
         # 2) wednesdayClose: array containing mkt close prices (48h later)
@@ -82,10 +92,14 @@ class twoDayChange:
         # 1) change: array of relative price changes for each 48h period 
         # 2) Note: Returns % change (already multiplied by 100)
     def relativeChange(initial = [], final =[]): 
+        # declare empty array to hold calculated relative changes 
         change = np.zeros((len(final), 1))
+        # iterate thru first array (both should have same size)
         for i in range(len(initial)): 
+            # ignore days when no trades happened
             if initial[i] == 0 or final[i] == 0:
                 continue 
+            # relative change formula 
             else: 
                 change[i] = ( final[i] - initial[i] ) / initial[i] * 100 
                 
