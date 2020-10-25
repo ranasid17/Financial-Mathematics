@@ -9,11 +9,14 @@ import pandas as pd
 import numpy as np 
 import matplotlib.pyplot as plt 
 from matplotlib import colors
+from scipy import stats
+import matplotlib.ticker as plticker
 
 # import csv file (include r prior to path to adjust for '/')
 # adjust this path to wherever file is stored on your computer 
-# SPY (ETF) used here as example 
+# SPY (ETF) and NFLX used here as example 
 spyRaw_Data = pd.read_csv (r'/Users/Sid/Documents/Other/SPY.csv') 
+nflxRaw_Data = pd.read_csv (r'/Users/Sid/Documents/Other/NFLX.csv') 
 
 # Goals: 
     # 1) Determine relative price change of an input over 48h period (M-W)
@@ -75,7 +78,7 @@ class twoDayChange:
         counter = 0
         # iterate thru first array 
         for i in range(len(openPrices)):
-            if ( i % 5  == 0): # every 7 days 
+            if ( i % 5  == 4): # every 7 days 
                 mondayOpen[counter] = openPrices[i] # save open price 
                 counter = counter+1 # increment counter 
         # iterate thru second array, reset counter 
@@ -108,25 +111,52 @@ class twoDayChange:
                 
         return change 
     # Goal: 
-        # 1) Calculate histogram
-        # 2) Plot histogram 
-    def plotHistogram(arr): 
-        # actual histogram command
-        n, bins, patches = plt.hist(arr, bins = 20, density = True) 
-        # ncolor code by height (AKA: likelihood)
-        fracs = n / arr.max()
-        # normalize fracts from [0,1]
-        norm = colors.Normalize(fracs.min(), fracs.max())
+        # 1) Process data for input into plotPDF function 
+    # Input: 
+        # 1) arr: array holding relative price changes of asset 
+    # Output
+        # 1) cleaned array containing no NaNs or INFs
+    def clean(arr):
+        output = arr[(np.isnan(arr) == False) & (np.isinf(arr) == False)]
+        return output
+    # Goal: 
+        # 1) Calculate probabilities of given relative price change for period
+        # 2) Plot histogram of observed probabilities 
+        # #) Calculate PDF of relative price change via Gaussian KDE 
+        # 4) Plot PDF on top of histogram 
+    # Input: 
+        # 1) arr: array of relative price changes for desired time period 
+        # 2) Note: arr MUST be 'cleaned' via clean method
+    # Output: 
+        # 1) histogram of relative price changes of asset
+        # 2) Estimated PDF of asset price change 
+    def plotPDF(arr):     
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        
+        # plot histogram
+        n, bins, patches = plt.hist(arr, bins = 30, density = True) 
+        # color code histogram 
+        fracs = n / arr.max() # normalize olor code by height (likelihood)
+        norm = colors.Normalize(fracs.min(), fracs.max()) # norm fracts [0,1]
         # loop thru each bin and set colors (using viridis map)
         for thisfrac, thispatch in zip(fracs, patches):
             color = plt.cm.viridis(norm(thisfrac))
             thispatch.set_facecolor(color)
-        
-        # set x ticks to be +/- 1 from input min/max
-        plt.xticks(np.arange(min(arr), max(arr), 2.0))
+            
+        # calculate kernel density estimator (with 2 separate techniques)
+        kde1 = stats.gaussian_kde(arr) 
+        kde2 = stats.gaussian_kde(arr, bw_method='silverman')
+        # plot KDE
+        arr_eval = np.linspace(-10, 10, num=200)
+        ax.plot(arr_eval, kde1(arr_eval), 'k-', label="Scott's Rule")
+        ax.plot(arr_eval, kde2(arr_eval), 'r-', label="Silverman's Rule")
+        # set tick frequency 
+        loc = plticker.MultipleLocator(base=2.0) 
+        ax.xaxis.set_major_locator(loc)
         # x, y, and plot titles
-        plt.xlabel('Relative Percent Price Change')
-        plt.ylabel('Observed Probability')
-        plt.title('48h Relative Price Change of SPY Oct 2019 - Oct 2020')
+        plt.xlabel('Percent (Relative) Price Change')
+        plt.ylabel('Probability')
+        plt.title('48h Relative Price Change of Asset Oct 2019 - Oct 2020')
         # display plot 
         plt.show 
