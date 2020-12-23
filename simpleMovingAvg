@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec 21 15:00:42 2020
+
+@author: Sid
+"""
+
+import yfinance as yf
+import pandas as pd 
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+class movingAvg: 
+    # (empty) Class constructor 
+    def __init__ (self):
+        pass
+    # Goal: Return weekday-adjusted closing prices for given security 
+    # Input: ticker object 
+    #   Note: ticker must be pre-defined
+    # Output: weekday-adjusted pd.DF of closing prices 
+    def extractPrices(ticker): 
+        # extract ticker history 
+        df = ticker.history(period='max')
+        # extract ticker closing prices 
+        closingPrice = pd.DataFrame(df, columns = ['Close'])
+        # set dates for [start, stop]
+        if (len(df)) > 252: # use 1 year previous data if available 
+            startDate = df.index[len(df)-252] 
+            endDate = df.index[len(df)-1] # must leave this as -1 
+        else: # use first possible date if <1 year since IPO 
+            startDate = df.index[0] 
+            endDate = df.index[len(df)-1] # must leave this as -1 
+        # return all weekdays (M-F) between [start,stop] dates and reindex
+        all_weekdays = pd.date_range(start=startDate, end=endDate, freq='B')
+        adjClose = closingPrice.reindex(all_weekdays)
+        # Swap NaNs post reindex w/ most recent security price 
+        adjClose = adjClose.fillna(method='ffill')
+
+        return adjClose 
+    # Goals: 
+        # 1) Calculate baseline (long) + trendline (short) moving average 
+        # 2) Plot baseline + trendline MAs with security price 
+    # Input: 
+        # 1) baseline: int length of desired long term average 
+        # 2) trendline: int length of desired short term average 
+    # Outputs: 
+        # 1) Graph of baseline + trendline + underlying security 
+    def simpleMovingAvg(baseline, trendline, df): 
+        # calculate moving averages 
+        trendWindow = df.rolling(window=trendline).mean()
+        baseWindow = df.rolling(window=baseline).mean()
+        # Plot trend + baselines 
+        sns.set_palette("deep",3) # set (nicer) color scheme
+        fig, ax = plt.subplots(1)
+        ax.plot(df.index, df, label='Stock Price',color="black")
+        ax.plot(trendWindow.index, trendWindow, label='Short Term Avg',
+                color="firebrick")
+        ax.plot(baseWindow.index, baseWindow, label='Long Term Avg',
+                color="green")
+        # X/Y lables
+        ax.set_xlabel('Date')
+        ax.set_ylabel('Adjusted Close Price')
+        ax.legend()
+        fig.suptitle("Underlying Price with Long + Short Term MAs")
+
+def main():
+    # Driver code, modify param in line 70 for stock of choosing (AAPL used as example) 
+    # create ticker object 
+    ticker = yf.Ticker("AAPL")
+    # create class instance 
+    smaTicker = movingAvg 
+    # extract closing prices for ticker 
+    adjCloseTicker= smaTicker.extractPrices(ticker)
+    # calculate + plot baseline + trend windows 
+    smaTicker.simpleMovingAvg(50, 20, adjCloseTicker)
+    
+if __name__ == "__main__":
+    main()
