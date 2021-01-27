@@ -14,5 +14,8 @@
     over the long term MA, it is a signal to buy the security (due to positive momentum). Conversely when short 
     term MA crosses under the long term MA, it is a signal to sell the security (due to negative momentum). S/LT MA 
     windows can be modified from default setting (50/100) 
+5) 01/06: LSTM is a long short-term memory neural network that uses historical data from a security in order to predict
+    the next day average price. It also includes methods to predict next day price from simple MA and exponential MA
+    models with the associated visualization and error calculation. 
     
 
