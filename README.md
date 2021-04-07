@@ -12,8 +12,10 @@ This repository containing various mathematical analysis programs created in ord
     
     b) By knowing the underlying PDF, price change peaks and deviation, short term options can be traded around the security's price movement during sliding window. Documentation within the class indicates how to pass arguments and interpret outputs of each method. Each method should be used sequentially within class. 
 4) 12/22/2020: simpleMovingAvg.py 
+    
     a) This is a class that pulls historical data of a ticker from YahooFinance to calculate long- and short-term MAs of the security. It then plots both MAs alongside the underlying price. When the short term MA crosses over the long-term MA, this is a signal to buy the security (due to positive momentum). Conversely when short-term MA crosses under the long term MA, this is a signal to sell the security (due to negative momentum). S/LT MA windows can be modified from default setting (50/100). I prefer 20/50 ST/LT MAs because in my experience it provides the best balance between noise reduction of recent price changes in volatile markets while also allowing for some flexibility in weighting the most recent price changes. 
 5) 01/06/2021: LSTM.py 
+
     a) This is a long short-term memory neural network that uses historical data from a security in order to predict the next day average price. LSTM neural networks are likely the best type of architecture to predict time series data due to their recurrent structure which allows for prior time values (in this case stock prices) to be refeed into the base layer as parametrized. The current iteration of this can predict next-day NASDAQ index (the top 100 stocks listed on NASDAQ) to about 96% accuracy. Running this model nightly would theoretically allow a trader to accurately asses risk and price the valuation of short term (next day expiry) contracts on any security that tracks the NASDAQ index.  
     
     
