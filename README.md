@@ -6,7 +6,7 @@ This repository containing quantitative analysis programs created in order to be
 This is a 1 layer perceptron that accepts an N x N input matrix (X) the user defines, and a 1 x N output matrix (Y) which contains the correct output for each row of X. The perceptron attempts to predict the value of Y for each row. 
 
 For example, if passed X = [0 0 1; 1 0 1; 0 0 0] and Y = [1; 1; 0] the goal is for the 1-layer neural network to predict as close to Y as possible. Perceptron.py will produce a binary output bewteen [0,1] for each row in its 3x1 output that increases in accuracy as the number of training epochs increases. The 1-layer neural network is primarily intended to demonstrate how non-traditional machine learning can predict quantitative data.  
-## 2) twoDayChange.py**
+## 2) twoDayChange.py
 This is a class that passed CSV of a security's historic data, calculates the relative price change of that instrument's performance over a sliding window (ex: Monday-Wednesday of each week for the past year). It then calculates the probability, using kernel density estimation (KDE), of the relative prices changes over each window and plots the result. The underlying probability density function (PDF) estimated by KDE theoretically provides greater accuracy and insight into the security's price change than simply viewing the actual probabilities. 
     
 By knowing the underlying PDF, price change peaks and deviation, short term options can be traded around the security's price movement during sliding window. Documentation within the class indicates how to pass arguments and interpret outputs of each method. Each method should be used sequentially within class. 
