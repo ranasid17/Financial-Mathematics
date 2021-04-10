@@ -9,8 +9,6 @@ import pandas as pd
 import numpy as np 
 import yfinance as yf
 import matplotlib.pyplot as plt 
-import datetime
-from datetime import date, timedelta
 
 
 class preprocessing: 
@@ -39,24 +37,36 @@ class preprocessing:
         
         return trading_weeks 
     
+    
+    def pull_weekdays(year, trading_weeks):
+        # pull all sundays, mondays, fridays in 2021 and convert to string
+        mondays = pd.date_range(start=str(year), end=str(year+1), freq='W-MON').strftime("%-m/%-d/%Y")
+        fridays = pd.date_range(start=str('1/04/2021'), end=str(year+1), freq='W-FRI').strftime("%-m/%-d/%Y")
+        # truncate list to only YTD mondays and convert to np array
+        mondays = np.array(mondays[0:len(trading_weeks)], dtype=str)
+        fridays = np.array(fridays[0:len(trading_weeks)], dtype=str) 
 
-class weekly_fund_analysis: 
-    def weekly_revenue(dataframe, trading_weeks): 
-        # create mask for each trading week, find EOW P/L for each week, store in variable
-        # must add column for each new week
+        # iter thru Mondays to check for no-trading days 
+        for i in range(len(trading_weeks)): 
+            if (mondays[i] == '1/18/2021'): # check for MLK Jr Day 
+                mondays[i] = '1/19/2021' # replace w following Tuesday 
+            if (mondays[i] == '2/15/2021'): # check for Pres' Day 
+                mondays[i] = '2/16/2021'# replace w following Tuesday 
+            # reformat to remove 0 padding (%-d does not work earlier in func)
+            mondays[i].replace("/0", "/")
+            fridays[i].replace("/0", "/")
+       
+        return mondays, fridays 
+    
+
+class trading_analysis: 
+    def revenue(dataframe, trading_weeks): 
+        # create mask for each trading week, find EOW P/L for each week
         weekly_revenue = np.zeros((len(trading_weeks),1))
-        weekly_revenue[0] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='1/3/2021', 0).sum()
-        weekly_revenue[1] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='1/10/2021', 0).sum()
-        weekly_revenue[2] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='1/17/2021', 0).sum()
-        weekly_revenue[3] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='1/24/2021', 0).sum()
-        weekly_revenue[4] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='1/31/2021', 0).sum()
-        weekly_revenue[5] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='2/7/2021', 0).sum()
-        weekly_revenue[6] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='2/14/2021', 0).sum()
-        weekly_revenue[7] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='2/21/2021', 0).sum()
-        weekly_revenue[8] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='2/28/2021', 0).sum()
-        weekly_revenue[9] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='3/7/2021', 0).sum()
-        weekly_revenue[10] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='3/14/2021', 0).sum()
-        weekly_revenue[11] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']=='3/21/2021', 0).sum()
+        # iterate thru all trading weeks 
+        for i in range(len(trading_weeks)): 
+            weekly_revenue[i] = dataframe[['Gain/Loss']].sum(axis=1).where(dataframe['Trading Week']==trading_weeks[i],0).sum()            
+        
         # sum running P/L 
         cumulative_revenue = np.cumsum(weekly_revenue)
         adj_cumulative_revenue = cumulative_revenue / 2 
@@ -65,22 +75,13 @@ class weekly_fund_analysis:
         return weekly_revenue, cumulative_revenue, adj_cumulative_revenue
 
     
-    def weekly_ROI(dataframe, trading_weeks): 
-        # repeat lines 34-45 for ROI column of df (Note: These are percentages)
-        # must add column for each new week
+    def ROI(dataframe, trading_weeks): 
+        # create mask for each trading week, find EOW ROI (as percentage) 
         weekly_ROI = np.zeros((len(trading_weeks),1))
-        weekly_ROI[0] = dataframe.loc[dataframe['Trading Week'] == '1/3/2021','ROI'].mean() 
-        weekly_ROI[1] = dataframe.loc[dataframe['Trading Week'] == '1/10/2021','ROI'].mean()
-        weekly_ROI[2] = dataframe.loc[dataframe['Trading Week'] == '1/17/2021','ROI'].mean()
-        weekly_ROI[3] = dataframe.loc[dataframe['Trading Week'] == '1/24/2021','ROI'].mean()
-        weekly_ROI[4] = dataframe.loc[dataframe['Trading Week'] == '1/31/2021','ROI'].mean()
-        weekly_ROI[5] = dataframe.loc[dataframe['Trading Week'] == '2/7/2021','ROI'].mean()
-        weekly_ROI[6] = dataframe.loc[dataframe['Trading Week'] == '2/14/2021','ROI'].mean()
-        weekly_ROI[7] = dataframe.loc[dataframe['Trading Week'] == '2/21/2021','ROI'].mean()
-        weekly_ROI[8] = dataframe.loc[dataframe['Trading Week'] == '2/28/2021','ROI'].mean()
-        weekly_ROI[9] = dataframe.loc[dataframe['Trading Week'] == '3/7/2021','ROI'].mean()
-        weekly_ROI[10] = dataframe.loc[dataframe['Trading Week'] == '3/14/2021','ROI'].mean()
-        weekly_ROI[11] = dataframe.loc[dataframe['Trading Week'] == '3/21/2021','ROI'].mean()
+        # iterate thru all trading weeks
+        for i in range(len(trading_weeks)): 
+            weekly_ROI[i] = dataframe.loc[dataframe['Trading Week']==trading_weeks[i],'ROI'].mean()
+        
         # sum running P/L 
         cumulative_ROI = pd.Series(np.cumsum(weekly_ROI))
         adj_cumulative_ROI = cumulative_ROI / 2 
@@ -89,23 +90,13 @@ class weekly_fund_analysis:
         return weekly_ROI, cumulative_ROI, adj_cumulative_ROI
     
     
-    def weekly_balance(dataframe, trading_weeks): 
-        # repeat lines 34-45 for fund valuation (Starting Balance) 
-        # must add column for each new week
+    def balance(dataframe, trading_weeks): 
+        # create mask for each trading week, find SOW balance 
         weekly_balance = np.zeros((len(trading_weeks),1))
-        weekly_balance[0] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='1/3/2021', 0).sum()
-        weekly_balance[1] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='1/10/2021', 0).sum()
-        weekly_balance[2] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='1/17/2021', 0).sum()
-        weekly_balance[3] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='1/24/2021', 0).sum()
-        weekly_balance[4] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='1/31/2021', 0).sum()
-        weekly_balance[5] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='2/7/2021', 0).sum()
-        weekly_balance[6] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='2/14/2021', 0).sum()
-        weekly_balance[7] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='2/21/2021', 0).sum()
-        weekly_balance[8] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='2/28/2021', 0).sum()
-        weekly_balance[9] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='3/7/2021', 0).sum()
-        weekly_balance[10] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='3/14/2021', 0).sum() 
-        weekly_balance[11] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']=='3/21/2021', 0).sum() 
-        
+        # iterate thru all trading weeks
+        for i in range(len(trading_weeks)): 
+            weekly_balance[i] = dataframe[['Starting Balance']].sum(axis=1).where(dataframe['Trading Week']==trading_weeks[i],0).sum()
+
         return weekly_balance
     
 
@@ -122,51 +113,33 @@ class spy_analysis:
         return open_price, close_price
     
     
-    def pull_weekdays(year, trading_weeks):
-        # pull all mondays from 1/1/21 to 12/31/21 and convert to string
-        mondays = pd.date_range(start=str(year), end=str(year+1), freq='W-MON').strftime("%Y-%m-%d")
-        # truncate list to only YTD mondays and convert to pd.Series 
-        mondays = pd.Series(mondays[0:len(trading_weeks)], dtype=str)
-        # iter thru Mondays to check for no-trading days 
-        for i in range(len(mondays)): 
-            if (mondays[i] == '2021-01-18'): # check for MLK Jr Day 
-                mondays[i] = '2021-01-19' # replace w following Tuesday 
-            if (mondays[i] == '2021-02-15'): # check for Pres' Day 
-                mondays[i] = '2021-02-16'# replace w following Tuesday 
-        # pull all mondays from 1/1/21 to 12/31/21 and convert to string
-        fridays = pd.date_range(start=str('2021-01-04'), end=str(year+1), freq='W-FRI').strftime("%Y-%m-%d")
-        # truncate list to only YTD mondays and convert to pd.Series
-        fridays = pd.Series(fridays[0:len(trading_weeks)], dtype=str) 
-        
-        return mondays, fridays 
-    
-    def get_monday_friday_prices(open_prices, close_prices, list_mondays, list_fridays):
+    def get_monday_friday_prices(open_prices, close_prices, mondays, fridays):
         # extract Monday/Friday open/close prices from full lists 
-        monday_opens = np.asarray(open_prices.loc[list_mondays])
-        friday_closes = np.asarray(close_prices.loc[list_fridays])
+        monday_opens = np.asarray(open_prices.loc[mondays])
+        friday_closes = np.asarray(close_prices.loc[fridays])
         
         return monday_opens, friday_closes
     
     
-    def weekly_value(monday_opens, friday_closes, trading_weeks, list_mondays, list_fridays): 
+    def weekly_value(monday_opens, friday_closes, trading_weeks, mondays, fridays): 
         # initialize array to hold weekly valuation of SPY 
-        weekly_value_change = np.zeros((len(trading_weeks),1))
+        weekly_change = np.zeros((len(trading_weeks),1))
         
-        # calculate weekly chagne in valuation 
-        weekly_value_change = friday_closes - monday_opens
-        # sum running P/L to find cumulative valuation 
-        cumulative_value = np.cumsum(weekly_value_change)
+        # calculate weekly change in valuation 
+        weekly_change = friday_closes - monday_opens
+        # find weekly YTD valuation change                 
+        cumulative_value = np.cumsum(weekly_change)
         
         # find weekly ROI by dividing weekly value by M open price of that week
         # must transpose monday_opens to [1 x n] array to make division work 
-        percent_weekly_ROI = weekly_value_change / monday_opens[0]
+        percent_weekly_ROI = weekly_change / monday_opens[0]
         percent_weekly_ROI = percent_weekly_ROI * 100 
         percent_weekly_ROI = percent_weekly_ROI.reshape(len(trading_weeks),1)
         # sum running percent weekly chagne to find cumulative percent change
         cumulative_ROI = np.cumsum(percent_weekly_ROI)
         
         # return running revenue, 
-        return weekly_value_change, cumulative_value, percent_weekly_ROI, cumulative_ROI
+        return weekly_change, cumulative_value, percent_weekly_ROI, cumulative_ROI
 
     def create_dataframe(trading_weeks, monday_opens, close_prices, weekly_ROI, cumulative_ROI): 
         df = pd.DataFrame(trading_weeks)
@@ -176,4 +149,3 @@ class spy_analysis:
         df['Cumulative ROI (%)'] = pd.Series(cumulative_ROI)
         return df 
         
-
