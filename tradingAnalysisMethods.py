@@ -6,7 +6,8 @@ Created on Sun Mar  7 22:14:40 2021
 @author: Sid
 """
 import pandas as pd 
-import numpy as np 
+import numpy as np
+import scikitlearn as sk
 import yfinance as yf
 import matplotlib.pyplot as plt 
 
@@ -14,7 +15,7 @@ import matplotlib.pyplot as plt
 class preprocessing: 
     def clean_df(): 
         # import weekly fund valuation csv 
-        dataframe = pd.read_csv('/Users/Sid/Documents/Finance/Fund Returns/Money Tracking-Grid view.csv') 
+        dataframe = pd.read_csv('/Users/Sid/Documents/Finance/Fund Returns/data/Money Tracking-Grid view.csv') 
         # remove '$' and '%' from all columns
         dataframe['Gain/Loss'] = dataframe['Gain/Loss'].str.replace('$', '').astype(float)
         dataframe['Starting Balance'] = dataframe['Starting Balance'].str.replace('$', '').astype(float)
@@ -149,3 +150,39 @@ class spy_analysis:
         df['Cumulative ROI (%)'] = pd.Series(cumulative_ROI)
         return df 
         
+
+class plots:
+    def weekly_values(trading_weeks, weekly_value, cum_value): 
+        prompt_user = 0 
+        while (prompt_user != 1) and (prompt_user != 2):
+            # ask user if want to plot returns or ROI
+            prompt_user = int(input(
+                "Are you plotting dollar-amount returns or ROI? \n" 
+                "Press 1 for dollar returns or 2 for ROI: "))
+        
+        # user selects to investigate returns 
+        if prompt_user == 1:
+            user_input = "Returns"
+        # user selects to investigate ROI
+        elif prompt_user == 2: 
+            user_input = "ROI"
+        
+        # create list for x axis 
+        abcissa = range(len(trading_weeks))
+        # create figure and axes objects 
+        plt.style.use('seaborn')
+        fig, axes = plt.subplots()
+        # set titles based on user selection 
+        axes.set_title("Weekly and Cumulative Fund " + user_input)
+        axes.set_ylabel(user_input)
+        axes.set_xlabel("Weeks Since Inception")
+        # plot weekly and cumulative values 
+        axes.plot(abcissa, weekly_value, "-.", label = "Weekly " + user_input, 
+                  color = "dodgerblue")
+        axes.plot(abcissa, cum_value, label = "Cumulative " + user_input,
+                  color = "navy")
+        # display legend and show plot 
+        plt.legend()
+        plt.show()
+        
+        return 0 
