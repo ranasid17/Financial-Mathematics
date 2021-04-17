@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Mar  7 22:14:40 2021
-
 @author: Sid
 """
 import pandas as pd 
 import numpy as np
-import scikitlearn as sk
 import yfinance as yf
 import matplotlib.pyplot as plt 
 
@@ -43,19 +41,14 @@ class preprocessing:
         # pull all sundays, mondays, fridays in 2021 and convert to string
         mondays = pd.date_range(start=str(year), end=str(year+1), freq='W-MON').strftime("%-m/%-d/%Y")
         fridays = pd.date_range(start=str('1/04/2021'), end=str(year+1), freq='W-FRI').strftime("%-m/%-d/%Y")
+        # check for non-trading Mon/Fri's (add to list as year progresses)
+        mondays = mondays.str.replace('1/18/2021', '1/19/2021') # MLK Jr Day
+        mondays = mondays.str.replace('2/15/2021', '2/16/2021') # Pres' Day
+        fridays = fridays.str.replace('4/2/2021', '4/1/2021') # Good Friday 
         # truncate list to only YTD mondays and convert to np array
         mondays = np.array(mondays[0:len(trading_weeks)], dtype=str)
         fridays = np.array(fridays[0:len(trading_weeks)], dtype=str) 
 
-        # iter thru Mondays to check for no-trading days 
-        for i in range(len(trading_weeks)): 
-            if (mondays[i] == '1/18/2021'): # check for MLK Jr Day 
-                mondays[i] = '1/19/2021' # replace w following Tuesday 
-            if (mondays[i] == '2/15/2021'): # check for Pres' Day 
-                mondays[i] = '2/16/2021'# replace w following Tuesday 
-            # reformat to remove 0 padding (%-d does not work earlier in func)
-            mondays[i].replace("/0", "/")
-            fridays[i].replace("/0", "/")
        
         return mondays, fridays 
     
@@ -181,6 +174,29 @@ class plots:
                   color = "dodgerblue")
         axes.plot(abcissa, cum_value, label = "Cumulative " + user_input,
                   color = "navy")
+        # display legend and show plot 
+        plt.legend()
+        plt.show()
+        
+    def spy_comparison(trading_weeks, fund_weekly, fund_cum, spy_weekly, spy_cum): 
+        # create list for x axis 
+        abcissa = range(len(trading_weeks))
+        # create figure and axes objects 
+        plt.style.use('seaborn')
+        fig, axes = plt.subplots()
+        # set titles based on user selection 
+        axes.set_title("Weekly and Cumulative  Returns Compared to S&P500")
+        axes.set_ylabel("ROI (%)")
+        axes.set_xlabel("Weeks Since Fund Inception")
+        # plot weekly and cumulative values 
+        axes.plot(abcissa, fund_weekly, "-.", label = "Weekly Fund Returns", 
+                  color = "#1f77b4")
+        axes.plot(abcissa, fund_cum, label = "Cumulative Fund Returns",
+                  color = "midnightblue")
+        axes.plot(abcissa, spy_weekly, "--", label = "Weekly SPY Returns ",
+                  color = "firebrick")
+        axes.plot(abcissa, spy_cum, label = "Cumulative SPY Returns ",
+                  color = "darkred")
         # display legend and show plot 
         plt.legend()
         plt.show()
