@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Oct 19 23:54:37 2020
+Updated on April 01 2021
+@author: Sid, Mayur
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import colors
+from scipy import stats
+import matplotlib.ticker as plticker
+import datetime
+import yfinance as yf
+from yahoo_fin import stock_info as si
+
+spy = yf.Ticker("SPY")
+
+# Get the current date and YTD
+# Added function to adjust the number of
+# years in the past if needed
+# I think this also accounts for leap years
+def subtractYears(dt, years):
+    try:
+        dt = dt.replace(year=dt.year-years)
+    except ValueError:
+        dt = dt.replace(year=dt.year-years, day=dt.day-1)
+    return dt
+
+today = datetime.datetime.now()
+yearAgo = subtractYears(today, 1)
+todayStr = today.strftime("%Y-%m-%d")
+yearAgoStr = yearAgo.strftime("%Y-%m-%d")
+
+# Downloads data as a pandas df from YF directly
+histData = yf.download("SPY", start=yearAgoStr, end=todayStr)
+histData.reset_index(level=0, inplace=True)
+
+
+# Returns the day as an integer, given a date string
+# 1M, 2T, 3W, 4R, 5F, 6S, 7S
+def getDay(date):
+    day = datetime.datetime.strptime(str(date), "%Y-%m-%d %X").isoweekday()
+    return day
+
+# Function to get user input for spread days
+def spreader():
+    print("1M, 2T, 3W, 4R, 5F, 6S, 7S")
+    print("Enter open day 1: ")
+    day1 = int(input())
+    #day1 = 1
+    print("Enter close day 2: ")
+    day2 = int(input())
+    #day2 = 3
+    opens = np.zeros((52, 1))
+    closes = np.zeros((52, 1))
+    counter = 0
+
+    for i in range(len(histData)):
+        if getDay(histData.iloc[i, 0]) == day1:
+            opens[counter] = float(histData["Open"][i])
+            counter = counter + 1
+    counter = 0
+    for i in histData.index:
+        if getDay(histData.iloc[i, 0]) == day2:
+            closes[counter] = float(histData["Adj Close"][i])
+            counter = counter + 1
+
+    return opens, closes
+
+
+def relativeChange(initial=[], final=[]):
+    #np.seterr(divide='ignore', invalid='ignore')
+    # declare empty array to hold calculated relative changes
+    change = np.zeros((len(final), 1))
+    # iterate thru first array (both should have same size)
+    for i in range(len(initial)):
+        # ignore days when no trades happened
+        if initial[i] == 0.0 or final[i] == 0.0:
+            continue
+            # relative change formula
+        else:
+            change[i] = (final[i] - initial[i]) / initial[i] * 100
+    cleanChange = change[(np.isnan(change) == False) & (np.isinf(change) == False)]
+    return cleanChange
+
+
+def plotPDF(arr):
+    #TODO: graph histogram vs time, plot every single point, overlay VIX
+    # 10-20 MA for short term analysis
+    # output: new histo, KDE graphs, VIX, and 5-10 or 10-20 MA
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    # plot histogram
+    n, bins, patches = plt.hist(arr, bins=52, density=True)
+    # color code histogram
+    fracs = n / arr.max()  # normalize color code by height (likelihood)
+    norm = colors.Normalize(fracs.min(), fracs.max())  # norm fracts [0,1]
+    # loop thru each bin and set colors (using viridis map)
+    for thisfrac, thispatch in zip(fracs, patches):
+        color = plt.cm.viridis(norm(thisfrac))
+        thispatch.set_facecolor(color)
+
+    # calculate kernel density estimator (with 2 separate techniques)
+    kde1 = stats.gaussian_kde(arr)
+    kde2 = stats.gaussian_kde(arr, bw_method='silverman')
+    # plot KDE
+    arr_eval = np.linspace(-10, 10, num=200)
+    ax.plot(arr_eval, kde1(arr_eval), 'k-', label="Scott's Rule")
+    ax.plot(arr_eval, kde2(arr_eval), 'r-', label="Silverman's Rule")
+    # set tick frequency
+    loc = plticker.MultipleLocator(base=2.0)
+    ax.xaxis.set_major_locator(loc)
+    # x, y, and plot titles
+    plt.xlabel('Percent (Relative) Price Change')
+    plt.ylabel('Probability')
+    plt.title('Relative Price Change $SPY, ' + yearAgo.strftime("%b %Y") +
+              " - " + today.strftime("%b %Y"))
+    # display plot
+    plt.interactive(True)
+    plt.show()
+
+#this ia hack way of doing OOP/main function lol
+def brr():
+    # choice = getInterval()
+    #print(histData)
+    openInput, closeInput = spreader()
+    print()
+    relChange = relativeChange(openInput, closeInput)
+    print(openInput)
+    plotPDF(relChange)
+
+    print("Enter +5% threshold (decimal): ")
+    plusFive = float(input())
+    print("Enter -5% threshold (decimal): ")
+    minusFive = float(input())
+
+    spyPrice = si.get_live_price("spy")
+    #spyPrice = 378.72
+
+    print()
+    fiveBelow = spyPrice - minusFive * spyPrice
+    fiveAbove = spyPrice + plusFive * spyPrice
+
+    print("5% PUT threshold: ", round(fiveBelow, 2))
+    print("Current price of SPY:", round(spyPrice, 2))
+    print("5% CALL threshold: ", round(fiveAbove, 2))
+
+brr()
