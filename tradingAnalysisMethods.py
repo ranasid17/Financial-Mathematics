@@ -11,20 +11,35 @@ import matplotlib.pyplot as plt
 
 
 class preprocessing: 
-    def clean_df(): 
+    def pull_fund_df(): 
         # import weekly fund valuation csv 
-        dataframe = pd.read_csv('/Users/Sid/Documents/Finance/Fund Returns/data/Money Tracking-Grid view.csv') 
+        df = pd.read_csv('/Users/Sid/Documents/Finance/Fund Returns/data/Money Tracking-Grid view.csv') 
         # remove '$' and '%' from all columns
-        dataframe['Gain/Loss'] = dataframe['Gain/Loss'].str.replace('$', '').astype(float)
-        dataframe['Starting Balance'] = dataframe['Starting Balance'].str.replace('$', '').astype(float)
-        dataframe['Funds in Play'] = dataframe['Funds in Play'].str.replace('$', '').astype(float)
-        dataframe['Friday Return'] = dataframe['Friday Return'].str.replace('$', '').astype(float)
-        dataframe['EOW Total'] = dataframe['EOW Total'].str.replace('$', '').astype(float)
-        dataframe['50% Commission'] = dataframe['50% Commission'].str.replace('$', '').astype(float)
-        dataframe['ROI'] = dataframe['ROI'].str.replace('%', '').astype(float)
+        df['Gain/Loss'] = df['Gain/Loss'].str.replace('$', '').astype(float)
+        df['Starting Balance'] = df['Starting Balance'].str.replace('$', '').astype(float)
+        df['Funds in Play'] = df['Funds in Play'].str.replace('$', '').astype(float)
+        df['Friday Return'] = df['Friday Return'].str.replace('$', '').astype(float)
+        df['EOW Total'] = df['EOW Total'].str.replace('$', '').astype(float)
+        df['50% Commission'] = df['50% Commission'].str.replace('$', '').astype(float)
+        df['ROI'] = df['ROI'].str.replace('%', '').astype(float)
         
-        return dataframe
+        return df
+    
+    
+    def pull_spreads_df(): 
+        # import weekly options spread tracking csv 
+        df = pd.read_csv(r'/Users/Sid/Documents/Finance/Fund Returns/data/Spreads-By Trading Week.csv')
+        # remove '$' from all columns
+        df['Gross'] = df['Gross'].str.replace('$','').astype(float)
+        df['Price'] = df['Price'].str.replace('$','').astype(float)
+        df['Short 1'] = df['Short 1'].str.replace('$','').astype(float)
+        df['Short 2'] = df['Short 2'].str.replace('$','').astype(float)
+        df['Long 1'] = df['Long 1'].str.replace('$','').astype(float)
+        df['Long 2'] = df['Long 2'].str.replace('$','').astype(float)
+        df['Collateral'] = df['Collateral'].str.replace('$','').astype(float)
         
+        return df 
+    
     
     def extract_trading_weeks(dataframe): 
         # extract trading weeks from df as pd.Series
@@ -53,7 +68,7 @@ class preprocessing:
         return mondays, fridays 
     
 
-class trading_analysis: 
+class fund_performance: 
     def revenue(dataframe, trading_weeks): 
         # create mask for each trading week, find EOW P/L for each week
         weekly_revenue = np.zeros((len(trading_weeks),1))
@@ -94,6 +109,19 @@ class trading_analysis:
         return weekly_balance
     
 
+class trading_analysis: 
+    def revenue(dataframe, trading_weeks): 
+        # create mask for each trading week, find EOW P/L for each week
+        weekly_revenue = np.zeros((len(trading_weeks),1))
+        # iterate thru all trading weeks 
+        for i in range(len(trading_weeks)): 
+            weekly_revenue[i] = dataframe[['Gross']].sum(axis=1).where(dataframe['Trading Week']==trading_weeks[i],0).sum()            
+        
+        # sum running P/L to find cumulative revenue 
+        cumulative_revenue = np.cumsum(weekly_revenue)
+        
+        # return running revenue, 
+        return weekly_revenue, cumulative_revenue
 class spy_analysis: 
     def extract_prices(input_ticker): 
         # convert input ticker to yf.Ticker object 
@@ -185,7 +213,7 @@ class plots:
         plt.style.use('seaborn')
         fig, axes = plt.subplots()
         # set titles based on user selection 
-        axes.set_title("Weekly and Cumulative  Returns Compared to S&P500")
+        axes.set_title("Weekly and Cumulative Fund Returns Compared to S&P500")
         axes.set_ylabel("ROI (%)")
         axes.set_xlabel("Weeks Since Fund Inception")
         # plot weekly and cumulative values 
@@ -200,5 +228,3 @@ class plots:
         # display legend and show plot 
         plt.legend()
         plt.show()
-        
-        return 0 
